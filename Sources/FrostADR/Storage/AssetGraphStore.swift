@@ -49,7 +49,8 @@ final class AssetGraphStore {
   @discardableResult
   func merge(_ result: DiscoveryScanResult) throws -> DiscoverySnapshot {
     try lock.withLock {
-      var snapshot = try loadSnapshotUnlocked()
+      let replacesColdStartSnapshot = result.hasColdStartCompletionEvent
+      var snapshot = replacesColdStartSnapshot ? DiscoverySnapshot() : try loadSnapshotUnlocked()
 
       for evidence in result.evidence {
         if !snapshot.evidence.contains(where: { $0.id == evidence.id }) {
@@ -78,7 +79,7 @@ final class AssetGraphStore {
         $0.capability.rawValue
       }
       snapshot.events = mergeByKey(snapshot.events + result.events) { $0.id.uuidString }
-      if result.hasColdStartTerminalEvent {
+      if result.hasColdStartCompletionEvent {
         snapshot.lastScannedAt = result.scannedAt
       } else {
         snapshot.lastScannedAt = latestScanTime(
@@ -88,6 +89,9 @@ final class AssetGraphStore {
           events: snapshot.events)
       }
 
+      if replacesColdStartSnapshot {
+        try database.deleteAll()
+      }
       try persist(snapshot)
       return snapshot
     }
@@ -103,6 +107,8 @@ final class AssetGraphStore {
     try append(snapshot.memories, kind: "memory", to: &lines)
     try append(snapshot.runtimeProcesses, kind: "runtimeProcess", to: &lines)
     try append(snapshot.evidence, kind: "evidence", to: &lines)
+    try append(snapshot.permissionStates, kind: "permissionState", to: &lines)
+    try append(snapshot.events, kind: "event", to: &lines)
     try FileManager.default.createDirectory(
       at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
     try lines.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
@@ -167,7 +173,7 @@ final class AssetGraphStore {
     events: [DiscoveryEvent]
   ) -> Date? {
     if let coldStartScan = events.filter({
-      $0.kind == .coldStartScan && $0.isColdStartTerminalEvent
+      $0.kind == .coldStartScan && $0.isColdStartCompletionEvent
     }).map(\.createdAt).max() {
       return coldStartScan
     }

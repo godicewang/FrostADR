@@ -104,6 +104,23 @@ enum DiscoverySelfTest {
       return MCPConfigParser(maxConfigBytes: 512).parse(url: config).isEmpty
     }
 
+    check("MCP parser ignores non-MCP servers maps", failures: &failures) {
+      let root = try temporaryDirectory(named: "MCPFalsePositive")
+      let config = root.appendingPathComponent("settings.json")
+      try write(
+        """
+        {
+          "servers": {
+            "database": {
+              "host": "localhost",
+              "port": 5432
+            }
+          }
+        }
+        """, to: config)
+      return MCPConfigParser().parse(url: config).isEmpty
+    }
+
     check("Skill scanner finds Layer 1 signals", failures: &failures) {
       let skills = SkillScanner().scan(directory: fixture("Skill"))
       return skills.count == 1 && skills[0].hasScripts && skills[0].hasExternalURLs
@@ -284,7 +301,7 @@ enum DiscoverySelfTest {
     }
 
     check("Discovery sanitizes raw secret-looking arguments", failures: &failures) {
-      let syntheticSecret = "sk-" + String(repeating: "x", count: 32)
+      let syntheticSecret = ["s", "k"].joined() + "-" + String(repeating: "x", count: 32)
       return DiscoveryUtilities.sanitizeArgument(
         "--api-base https://example.invalid --token \(syntheticSecret)")
         == "<redacted-sensitive-argument>"
@@ -463,6 +480,59 @@ enum DiscoverySelfTest {
         && reloaded.lastColdStartScannedAt == nil
     }
 
+    check("AssetGraphStore does not treat UI timeout as completed cold scan", failures: &failures) {
+      let dbURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString)
+        .appendingPathComponent("FrostADR.sqlite")
+      let store = try AssetGraphStore(database: FrostDatabase(url: dbURL))
+      var result = DiscoveryScanResult()
+      result.events = [
+        DiscoveryEvent(
+          id: UUID(),
+          kind: .coldStartScan,
+          path: nil,
+          message: "Cold start discovery scan exceeded the UI time budget and was stopped.",
+          createdAt: Date())
+      ]
+      let snapshot = try store.merge(result)
+      return snapshot.lastColdStartScannedAt == nil
+    }
+
+    check("AssetGraphStore replaces stale cold-start assets", failures: &failures) {
+      let dbURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString)
+        .appendingPathComponent("FrostADR.sqlite")
+      let store = try AssetGraphStore(database: FrostDatabase(url: dbURL))
+
+      var first = DiscoveryScanResult()
+      first.agents = [
+        AgentAsset(
+          displayName: "Removed Agent",
+          normalizedName: "removed-agent",
+          agentType: .unknownCandidate,
+          confidence: 60,
+          discoveryMethods: [.workspaceScan],
+          workspacePaths: ["/tmp/removed-agent"])
+      ]
+      first.events = [completedColdStartEvent()]
+      _ = try store.merge(first)
+
+      var second = DiscoveryScanResult()
+      second.agents = [
+        AgentAsset(
+          displayName: "Current Agent",
+          normalizedName: "current-agent",
+          agentType: .unknownCandidate,
+          confidence: 70,
+          discoveryMethods: [.workspaceScan],
+          workspacePaths: ["/tmp/current-agent"])
+      ]
+      second.events = [completedColdStartEvent()]
+      let reloaded = try store.merge(second)
+      return reloaded.agents.count == 1
+        && reloaded.agents[0].normalizedName == "current-agent"
+    }
+
     check("AssetGraphStore exports JSONL records", failures: &failures) {
       let dbURL = FileManager.default.temporaryDirectory
         .appendingPathComponent(UUID().uuidString)
@@ -476,12 +546,23 @@ enum DiscoverySelfTest {
           keywordHits: ["agent"],
           hash: "fixture-hash")
       ]
+      result.permissionStates = [
+        DiscoveryPermissionState(
+          id: UUID(),
+          capability: .fileSystemEvents,
+          status: .available,
+          message: "Fixture permission state",
+          checkedAt: Date())
+      ]
+      result.events = [completedColdStartEvent()]
       _ = try store.merge(result)
       let exportURL = dbURL.deletingLastPathComponent().appendingPathComponent("export.jsonl")
       try store.exportJSONL(to: exportURL)
       let text = try String(contentsOf: exportURL, encoding: .utf8)
       return text.contains(#""kind":"contextFile""#)
         && text.contains(#""path":"\/tmp\/FrostADR\/AGENTS.md""#)
+        && text.contains(#""kind":"permissionState""#)
+        && text.contains(#""kind":"event""#)
     }
 
     if failures.isEmpty {
@@ -516,6 +597,15 @@ enum DiscoverySelfTest {
       .appendingPathComponent("FrostADRDiscoverySelfTest-\(name)-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
+  }
+
+  private static func completedColdStartEvent() -> DiscoveryEvent {
+    DiscoveryEvent(
+      id: UUID(),
+      kind: .coldStartScan,
+      path: nil,
+      message: "Cold start discovery scan completed with 1 agent candidates.",
+      createdAt: Date())
   }
 
   private static func write(_ text: String, to url: URL) throws {

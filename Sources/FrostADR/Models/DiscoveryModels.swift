@@ -243,7 +243,7 @@ struct DiscoverySnapshot: Codable, Hashable {
 
 extension DiscoverySnapshot {
   var lastColdStartScannedAt: Date? {
-    events.filter { $0.kind == .coldStartScan && $0.isColdStartTerminalEvent }
+    events.filter { $0.kind == .coldStartScan && $0.isColdStartCompletionEvent }
       .map(\.createdAt)
       .max()
   }
@@ -263,15 +263,15 @@ struct DiscoveryScanResult: Codable, Hashable {
 }
 
 extension DiscoveryScanResult {
-  var hasColdStartTerminalEvent: Bool {
-    events.contains { $0.kind == .coldStartScan && $0.isColdStartTerminalEvent }
+  var hasColdStartCompletionEvent: Bool {
+    events.contains { $0.kind == .coldStartScan && $0.isColdStartCompletionEvent }
   }
 }
 
 extension DiscoveryEvent {
-  var isColdStartTerminalEvent: Bool {
+  var isColdStartCompletionEvent: Bool {
     let lower = message.lowercased()
-    return lower.contains("completed") || lower.contains("stopped")
-      || lower.contains("exceeded")
+    return lower.contains("completed")
+      || lower.contains("stopped after the lightweight time budget")
   }
 }

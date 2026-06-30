@@ -31,10 +31,12 @@ final class MCPConfigParser {
     for serverMap in recursiveMCPServerMaps(in: object) {
       for (name, rawConfig) in serverMap {
         guard let config = rawConfig as? [String: Any] else { continue }
-        servers.append(
-          asset(
-            name: name, config: config, configURL: url, sourceAgentId: sourceAgentId,
-            workspacePath: workspacePath))
+        if let server = asset(
+          name: name, config: config, configURL: url, sourceAgentId: sourceAgentId,
+          workspacePath: workspacePath)
+        {
+          servers.append(server)
+        }
       }
     }
     return servers
@@ -72,7 +74,7 @@ final class MCPConfigParser {
       configs[currentName, default: [:]][key] = parseTOMLValue(value)
     }
 
-    return configs.map { name, config in
+    return configs.compactMap { name, config in
       asset(
         name: name, config: config, configURL: url, sourceAgentId: sourceAgentId,
         workspacePath: workspacePath)
@@ -105,7 +107,8 @@ final class MCPConfigParser {
     configURL: URL,
     sourceAgentId: UUID?,
     workspacePath: String?
-  ) -> MCPServerAsset {
+  ) -> MCPServerAsset? {
+    guard isMCPServerConfig(config) else { return nil }
     let command = config["command"] as? String
     let args = (config["args"] as? [String] ?? []).map(DiscoveryUtilities.sanitizeArgument)
     let envKeys = DiscoveryUtilities.envKeyNames(from: config["env"])
@@ -130,6 +133,13 @@ final class MCPConfigParser {
       riskLevel: DiscoveryUtilities.riskLevel(for: risk),
       lastModifiedAt: DiscoveryUtilities.modificationDate(configURL)
     )
+  }
+
+  private func isMCPServerConfig(_ config: [String: Any]) -> Bool {
+    config["command"] is String
+      || config["url"] is String
+      || config["transport"] is String
+      || config["type"] is String
   }
 
   private func transport(from config: [String: Any]) -> MCPTransport {
