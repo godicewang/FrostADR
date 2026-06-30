@@ -21,11 +21,12 @@ final class KnownAgentScanner {
     self.config = config
   }
 
-  func scan() -> DiscoveryScanResult {
+  func scan(deadline: Date? = nil) -> DiscoveryScanResult {
     var result = DiscoveryScanResult()
     let now = Date()
 
     for fingerprint in registry.fingerprints {
+      guard !isExpired(deadline) else { break }
       var evidence: [DiscoveryEvidence] = []
       var installPaths: [String] = []
       var configPaths: [String] = []
@@ -37,6 +38,7 @@ final class KnownAgentScanner {
       var confidence = 0
 
       for path in fingerprint.installPaths {
+        guard !isExpired(deadline) else { break }
         let url = expanded(path)
         guard shouldAccess(url) else { continue }
         if DiscoveryUtilities.fileExists(url) || DiscoveryUtilities.directoryExists(url) {
@@ -51,6 +53,7 @@ final class KnownAgentScanner {
       }
 
       for path in fingerprint.configPaths {
+        guard !isExpired(deadline) else { break }
         let url = expanded(path)
         guard shouldAccess(url) else { continue }
         if DiscoveryUtilities.fileExists(url) {
@@ -64,6 +67,7 @@ final class KnownAgentScanner {
       }
 
       for path in fingerprint.mcpConfigPaths {
+        guard !isExpired(deadline) else { break }
         let url = expanded(path)
         guard shouldAccess(url) else { continue }
         if DiscoveryUtilities.fileExists(url) {
@@ -78,6 +82,7 @@ final class KnownAgentScanner {
       }
 
       for path in fingerprint.skillPaths {
+        guard !isExpired(deadline) else { break }
         for url in expandedCandidates(path)
         where shouldAccess(url) && DiscoveryUtilities.directoryExists(url) {
           skillPaths.append(url.path)
@@ -90,6 +95,7 @@ final class KnownAgentScanner {
       }
 
       for path in fingerprint.cachePaths {
+        guard !isExpired(deadline) else { break }
         let url = expanded(path)
         guard shouldAccess(url) else { continue }
         if DiscoveryUtilities.fileExists(url) || DiscoveryUtilities.directoryExists(url) {
@@ -103,6 +109,7 @@ final class KnownAgentScanner {
       }
 
       for path in fingerprint.memoryPaths {
+        guard !isExpired(deadline) else { break }
         let url = expanded(path)
         guard shouldAccess(url) else { continue }
         if DiscoveryUtilities.fileExists(url) || DiscoveryUtilities.directoryExists(url) {
@@ -116,7 +123,9 @@ final class KnownAgentScanner {
       }
 
       for root in config.scanRoots where DiscoveryUtilities.directoryExists(root) {
+        guard !isExpired(deadline) else { break }
         for marker in fingerprint.projectMarkers {
+          guard !isExpired(deadline) else { break }
           let markerURL = root.appendingPathComponent(marker)
           if DiscoveryUtilities.fileExists(markerURL)
             || DiscoveryUtilities.directoryExists(markerURL)
@@ -188,9 +197,10 @@ final class KnownAgentScanner {
           }
         }
       result.skills.append(
-        contentsOf: skillScanner.scan(directories: skillURLs, sourceAgentId: asset.id))
+        contentsOf: skillScanner.scan(
+          directories: skillURLs, sourceAgentId: asset.id, deadline: deadline))
 
-      let memoryURLs = collectMemoryFiles(paths: memoryPaths)
+      let memoryURLs = collectMemoryFiles(paths: memoryPaths, deadline: deadline)
       result.memories.append(
         contentsOf: memoryScanner.scan(files: memoryURLs, sourceAgentId: asset.id))
     }
@@ -240,28 +250,32 @@ final class KnownAgentScanner {
     workspaces.first { url.path.hasPrefix($0) }
   }
 
-  private func collectMemoryFiles(paths: [String]) -> [URL] {
+  private func collectMemoryFiles(paths: [String], deadline: Date?) -> [URL] {
     var files: [URL] = []
     var budget = MemoryCollectionBudget()
     for path in paths {
+      guard !isExpired(deadline) else { break }
       guard files.count < config.limits.maxCollectedMemoryFiles else { break }
       let url = URL(fileURLWithPath: path)
       guard shouldAccess(url) else { continue }
       if DiscoveryUtilities.fileExists(url) {
         files.append(url)
       } else if DiscoveryUtilities.directoryExists(url) {
-        collectMemoryFiles(in: url, depth: 0, files: &files, budget: &budget)
+        collectMemoryFiles(
+          in: url, depth: 0, files: &files, budget: &budget, deadline: deadline)
       }
     }
     return files
   }
 
   private func collectMemoryFiles(
-    in directory: URL, depth: Int, files: inout [URL], budget: inout MemoryCollectionBudget
+    in directory: URL, depth: Int, files: inout [URL], budget: inout MemoryCollectionBudget,
+    deadline: Date?
   ) {
     guard depth <= config.limits.maxDepth,
       budget.visitedDirectories < config.limits.maxScannedDirectories,
-      files.count < config.limits.maxCollectedMemoryFiles
+      files.count < config.limits.maxCollectedMemoryFiles,
+      !isExpired(deadline)
     else {
       return
     }
@@ -269,13 +283,15 @@ final class KnownAgentScanner {
 
     let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
     for name in names.prefix(config.limits.maxDirectoryEntries) {
+      guard !isExpired(deadline) else { break }
       guard files.count < config.limits.maxCollectedMemoryFiles else { break }
       if KeywordFileScanner.skipDirectoryNames.contains(name) { continue }
       let url = directory.appendingPathComponent(name)
       var isDirectory: ObjCBool = false
       FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
       if isDirectory.boolValue {
-        collectMemoryFiles(in: url, depth: depth + 1, files: &files, budget: &budget)
+        collectMemoryFiles(
+          in: url, depth: depth + 1, files: &files, budget: &budget, deadline: deadline)
       } else if isMemoryLikeFile(url) {
         files.append(url)
       }
@@ -286,6 +302,11 @@ final class KnownAgentScanner {
     let name = url.lastPathComponent.lowercased()
     return name.hasSuffix(".jsonl") || name.hasSuffix(".sqlite") || name.hasSuffix(".db")
       || name.contains("memory") || name.contains("conversation") || name.contains("session")
+  }
+
+  private func isExpired(_ deadline: Date?) -> Bool {
+    guard let deadline else { return false }
+    return Date() >= deadline
   }
 }
 

@@ -7,14 +7,16 @@ final class SkillScanner {
     self.limits = limits
   }
 
-  func scan(directories: [URL], sourceAgentId: UUID? = nil) -> [SkillAsset] {
-    directories.flatMap { scan(directory: $0, sourceAgentId: sourceAgentId) }
+  func scan(directories: [URL], sourceAgentId: UUID? = nil, deadline: Date? = nil)
+    -> [SkillAsset]
+  {
+    directories.flatMap { scan(directory: $0, sourceAgentId: sourceAgentId, deadline: deadline) }
   }
 
-  func scan(directory: URL, sourceAgentId: UUID? = nil) -> [SkillAsset] {
+  func scan(directory: URL, sourceAgentId: UUID? = nil, deadline: Date? = nil) -> [SkillAsset] {
     guard DiscoveryUtilities.directoryExists(directory) else { return [] }
     var results: [SkillAsset] = []
-    var budget = SkillScanBudget()
+    var budget = SkillScanBudget(deadline: deadline)
     walk(directory, depth: 0, budget: &budget) { url in
       if url.lastPathComponent == "SKILL.md" {
         let skillDirectory = url.deletingLastPathComponent()
@@ -126,12 +128,18 @@ final class SkillScanner {
 private struct SkillScanBudget {
   var visitedDirectories = 0
   var inspectedFiles = 0
+  var deadline: Date?
 
   func canVisitDirectory(_ limits: ScanLimits) -> Bool {
-    visitedDirectories < limits.maxScannedDirectories
+    visitedDirectories < limits.maxScannedDirectories && !isExpired
   }
 
   func canInspectFile(_ limits: ScanLimits) -> Bool {
-    inspectedFiles < limits.maxInspectedFiles
+    inspectedFiles < limits.maxInspectedFiles && !isExpired
+  }
+
+  private var isExpired: Bool {
+    guard let deadline else { return false }
+    return Date() >= deadline
   }
 }

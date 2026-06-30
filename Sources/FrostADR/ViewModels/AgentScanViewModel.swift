@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import Foundation
 
@@ -65,9 +66,46 @@ final class AgentScanViewModel: ObservableObject {
     bind(from: service)
   }
 
+  func openRootDirectory(for agent: AgentAsset) {
+    guard let url = rootURL(for: agent) else {
+      errorMessage = "未找到可打开的 Agent 根目录。"
+      return
+    }
+    NSWorkspace.shared.open(url)
+  }
+
   private func bind(from service: AgentDiscoveryService) {
     snapshot = service.snapshot
     isScanning = service.isScanning
     errorMessage = service.lastError
+  }
+
+  private func rootURL(for agent: AgentAsset) -> URL? {
+    let candidates =
+      agent.workspacePaths.map(URL.init(fileURLWithPath:))
+      + agent.installPaths.map(URL.init(fileURLWithPath:))
+      + agent.configPaths.map(URL.init(fileURLWithPath:))
+      + agent.mcpConfigPaths.map(URL.init(fileURLWithPath:))
+      + agent.skillPaths.map(URL.init(fileURLWithPath:))
+      + agent.memoryPaths.map(URL.init(fileURLWithPath:))
+      + agent.executablePaths.map(URL.init(fileURLWithPath:))
+
+    for candidate in candidates {
+      if let directory = existingRootDirectory(for: candidate) {
+        return directory
+      }
+    }
+    return nil
+  }
+
+  private func existingRootDirectory(for url: URL) -> URL? {
+    var isDirectory: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
+      return nil
+    }
+    if isDirectory.boolValue {
+      return url.pathExtension == "app" ? url.deletingLastPathComponent() : url
+    }
+    return url.deletingLastPathComponent()
   }
 }

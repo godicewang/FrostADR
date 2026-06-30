@@ -14,13 +14,17 @@ final class ProcessInspector {
     self.registry = registry
   }
 
-  func inspectRunningProcesses() -> DiscoveryScanResult {
-    inspect(observations: processRows())
+  func inspectRunningProcesses(deadline: Date? = nil) -> DiscoveryScanResult {
+    guard !isExpired(deadline) else { return DiscoveryScanResult() }
+    return inspect(observations: processRows(timeout: 2), deadline: deadline)
   }
 
-  func inspect(observations rows: [ProcessObservation]) -> DiscoveryScanResult {
+  func inspect(observations rows: [ProcessObservation], deadline: Date? = nil)
+    -> DiscoveryScanResult
+  {
     var result = DiscoveryScanResult()
     for row in rows {
+      guard !isExpired(deadline) else { break }
       result.merge(knownProcessResult(for: row))
 
       let input = BehaviorFingerprintInput(
@@ -132,7 +136,7 @@ final class ProcessInspector {
     return result
   }
 
-  private func processRows() -> [ProcessObservation] {
+  private func processRows(timeout: TimeInterval) -> [ProcessObservation] {
     let process = Process()
     process.executableURL = URL(fileURLWithPath: "/bin/ps")
     process.arguments = ["-axo", "pid=,ppid=,comm=,args="]
@@ -141,13 +145,25 @@ final class ProcessInspector {
     process.standardError = Pipe()
     do {
       try process.run()
-      process.waitUntilExit()
+      let startedAt = Date()
+      while process.isRunning && Date().timeIntervalSince(startedAt) < timeout {
+        Thread.sleep(forTimeInterval: 0.03)
+      }
+      if process.isRunning {
+        process.terminate()
+        return []
+      }
     } catch {
       return []
     }
     let data = pipe.fileHandleForReading.readDataToEndOfFile()
     guard let output = String(data: data, encoding: .utf8) else { return [] }
     return output.components(separatedBy: .newlines).compactMap(ProcessObservation.init(line:))
+  }
+
+  private func isExpired(_ deadline: Date?) -> Bool {
+    guard let deadline else { return false }
+    return Date() >= deadline
   }
 
   private func providers(in text: String) -> [String] {

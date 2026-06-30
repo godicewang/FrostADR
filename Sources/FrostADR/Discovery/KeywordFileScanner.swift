@@ -39,9 +39,9 @@ final class KeywordFileScanner {
     self.memoryScanner = memoryScanner
   }
 
-  func scan(additionalRoots: [URL] = []) -> DiscoveryScanResult {
+  func scan(additionalRoots: [URL] = [], deadline: Date? = nil) -> DiscoveryScanResult {
     var result = DiscoveryScanResult()
-    var budget = ScanBudget()
+    var budget = ScanBudget(deadline: deadline)
     let roots = (config.scanRoots + additionalRoots).map { $0.standardizedFileURL }.uniqueSorted()
 
     for root in roots where DiscoveryUtilities.directoryExists(root) {
@@ -178,12 +178,18 @@ final class KeywordFileScanner {
 private struct ScanBudget {
   var visitedDirectories = 0
   var inspectedFiles = 0
+  var deadline: Date?
 
   func canVisitDirectory(_ limits: ScanLimits) -> Bool {
-    visitedDirectories < limits.maxScannedDirectories
+    visitedDirectories < limits.maxScannedDirectories && !isExpired
   }
 
   func canInspectFile(_ limits: ScanLimits) -> Bool {
-    inspectedFiles < limits.maxInspectedFiles
+    inspectedFiles < limits.maxInspectedFiles && !isExpired
+  }
+
+  private var isExpired: Bool {
+    guard let deadline else { return false }
+    return Date() >= deadline
   }
 }

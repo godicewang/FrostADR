@@ -33,18 +33,26 @@ final class ColdStartScanner: @unchecked Sendable {
 
   func runFullScan() -> DiscoveryScanResult {
     var result = DiscoveryScanResult()
+    let deadline = Date().addingTimeInterval(config.limits.maxScanSeconds)
     result.events.append(
       DiscoveryEvent(
         id: UUID(), kind: .coldStartScan, path: nil, message: "Cold start discovery scan started.",
         createdAt: result.scannedAt)
     )
 
-    result.merge(knownAgentScanner.scan())
-    result.merge(
-      keywordScanner.scan(
-        additionalRoots: result.agents.flatMap { $0.workspacePaths.map(URL.init(fileURLWithPath:)) }
-      ))
-    result.merge(processInspector.inspectRunningProcesses())
+    result.merge(knownAgentScanner.scan(deadline: deadline))
+    if !isExpired(deadline) {
+      result.merge(
+        keywordScanner.scan(
+          additionalRoots: result.agents.flatMap {
+            $0.workspacePaths.map(URL.init(fileURLWithPath:))
+          },
+          deadline: deadline
+        ))
+    }
+    if !isExpired(deadline) {
+      result.merge(processInspector.inspectRunningProcesses(deadline: deadline))
+    }
     if !config.scanRoots.isEmpty {
       result.permissionStates.append(
         contentsOf: permissionInspector.inspect(paths: config.scanRoots))
@@ -55,16 +63,22 @@ final class ColdStartScanner: @unchecked Sendable {
     if config.enableNetworkMonitor {
       result.permissionStates.append(networkFlowMonitor.permissionState())
     }
+    let timedOut = isExpired(deadline)
     result.events.append(
       DiscoveryEvent(
         id: UUID(),
         kind: .coldStartScan,
         path: nil,
-        message:
-          "Cold start discovery scan completed with \(result.agents.count) agent candidates.",
+        message: timedOut
+          ? "Cold start discovery scan stopped after the lightweight time budget with \(result.agents.count) agent candidates."
+          : "Cold start discovery scan completed with \(result.agents.count) agent candidates.",
         createdAt: Date()
       ))
     return result
+  }
+
+  private func isExpired(_ deadline: Date) -> Bool {
+    Date() >= deadline
   }
 }
 

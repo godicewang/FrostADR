@@ -19,17 +19,30 @@ final class AssetGraphStore {
   }
 
   private func loadSnapshotUnlocked() throws -> DiscoverySnapshot {
-    DiscoverySnapshot(
-      agents: try database.loadAll(AgentAsset.self, kind: .agent),
-      mcpServers: try database.loadAll(MCPServerAsset.self, kind: .mcpServer),
-      skills: try database.loadAll(SkillAsset.self, kind: .skill),
-      contextFiles: try database.loadAll(ContextFileAsset.self, kind: .contextFile),
-      memories: try database.loadAll(MemoryAsset.self, kind: .memory),
-      runtimeProcesses: try database.loadAll(RuntimeProcessAsset.self, kind: .runtimeProcess),
-      evidence: try database.loadAll(DiscoveryEvidence.self, kind: .evidence),
-      permissionStates: try database.loadAll(DiscoveryPermissionState.self, kind: .permissionState),
-      events: try database.loadAll(DiscoveryEvent.self, kind: .event),
-      lastScannedAt: try database.loadAll(DiscoveryEvent.self, kind: .event).map(\.createdAt).max()
+    let agents = try database.loadAll(AgentAsset.self, kind: .agent)
+    let mcpServers = try database.loadAll(MCPServerAsset.self, kind: .mcpServer)
+    let skills = try database.loadAll(SkillAsset.self, kind: .skill)
+    let contextFiles = try database.loadAll(ContextFileAsset.self, kind: .contextFile)
+    let memories = try database.loadAll(MemoryAsset.self, kind: .memory)
+    let runtimeProcesses = try database.loadAll(RuntimeProcessAsset.self, kind: .runtimeProcess)
+    let evidence = try database.loadAll(DiscoveryEvidence.self, kind: .evidence)
+    let permissionStates = try database.loadAll(
+      DiscoveryPermissionState.self, kind: .permissionState)
+    let events = try database.loadAll(DiscoveryEvent.self, kind: .event)
+
+    return DiscoverySnapshot(
+      agents: agents,
+      mcpServers: mcpServers,
+      skills: skills,
+      contextFiles: contextFiles,
+      memories: memories,
+      runtimeProcesses: runtimeProcesses,
+      evidence: evidence,
+      permissionStates: permissionStates,
+      events: events,
+      lastScannedAt: latestScanTime(
+        agents: agents, mcpServers: mcpServers, skills: skills, contextFiles: contextFiles,
+        memories: memories, runtimeProcesses: runtimeProcesses, evidence: evidence, events: events)
     )
   }
 
@@ -133,6 +146,26 @@ final class AssetGraphStore {
         lines.append(line)
       }
     }
+  }
+
+  private func latestScanTime(
+    agents: [AgentAsset],
+    mcpServers: [MCPServerAsset],
+    skills: [SkillAsset],
+    contextFiles: [ContextFileAsset],
+    memories: [MemoryAsset],
+    runtimeProcesses: [RuntimeProcessAsset],
+    evidence: [DiscoveryEvidence],
+    events: [DiscoveryEvent]
+  ) -> Date? {
+    (events.map(\.createdAt)
+      + agents.map(\.lastScannedAt)
+      + mcpServers.map(\.discoveredAt)
+      + skills.map(\.discoveredAt)
+      + contextFiles.map(\.discoveredAt)
+      + runtimeProcesses.map(\.lastSeenAt)
+      + evidence.map(\.observedAt)
+      + memories.compactMap(\.lastModifiedAt)).max()
   }
 }
 

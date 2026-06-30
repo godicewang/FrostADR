@@ -11,6 +11,7 @@ enum DiscoverySelfTest {
         "claude-desktop",
         "codex-cli",
         "cursor",
+        "trae",
         "gemini-cli",
         "cline-roocode",
         "continue",
@@ -258,7 +259,9 @@ enum DiscoverySelfTest {
         )
       ]
       let snapshot = try store.merge(second)
+      let reloaded = try AssetGraphStore(database: FrostDatabase(url: dbURL)).loadSnapshot()
       return snapshot.agents.count == 1 && snapshot.agents[0].confidence == 80
+        && reloaded.lastScannedAt != nil
     }
 
     check("AssetGraphStore exports JSONL records", failures: &failures) {

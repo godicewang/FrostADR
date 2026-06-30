@@ -134,6 +134,7 @@ struct ScanLimits: Codable, Hashable {
   var maxScannedDirectories: Int = 700
   var maxInspectedFiles: Int = 1_200
   var maxCollectedMemoryFiles: Int = 120
+  var maxScanSeconds: TimeInterval = 12
 
   static let lightweightDefault = ScanLimits(
     maxDepth: 3,
@@ -141,7 +142,8 @@ struct ScanLimits: Codable, Hashable {
     maxDirectoryEntries: 800,
     maxScannedDirectories: 350,
     maxInspectedFiles: 700,
-    maxCollectedMemoryFiles: 80
+    maxCollectedMemoryFiles: 80,
+    maxScanSeconds: 8
   )
 }
 

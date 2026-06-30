@@ -3,6 +3,7 @@ import SwiftUI
 struct AgentScanView: View {
   @StateObject private var viewModel = AgentScanViewModel()
   @State private var selectedAgentID: UUID?
+  @State private var showsLowConfidenceCommonAgents = false
 
   var body: some View {
     FrostPage {
@@ -39,7 +40,7 @@ struct AgentScanView: View {
         .frame(width: 48, height: 48)
 
         VStack(alignment: .leading, spacing: 5) {
-          Text(viewModel.isScanning ? "正在轻量扫描本机 Agent 资产" : "Agent 发现引擎已连接本机数据")
+          Text(viewModel.isScanning ? "正在构建本机Agent画像" : headerTitle)
             .font(.system(size: 16, weight: .bold))
 
           Text(statusLine)
@@ -64,7 +65,7 @@ struct AgentScanView: View {
         Button {
           viewModel.rescan()
         } label: {
-          Label("重新扫描", systemImage: "arrow.clockwise")
+          Label("重新构建画像", systemImage: "arrow.clockwise")
         }
         .disabled(viewModel.isScanning)
       }
@@ -92,9 +93,13 @@ struct AgentScanView: View {
   private var statusLine: String {
     if let lastScannedAt = viewModel.snapshot.lastScannedAt {
       return
-        "最近扫描：\(lastScannedAt.formatted(date: .abbreviated, time: .standard))。所有结果来自本机扫描与本地持久化。"
+        "最近构建：\(lastScannedAt.formatted(date: .abbreviated, time: .standard))。启动时直接加载本地画像，需要刷新时手动重新构建。"
     }
-    return "等待首次扫描完成。默认只扫描无需额外授权的 Agent 配置和已授权工作区，不读取受保护应用数据。"
+    return "等待首次构建。默认只扫描无需额外授权的 Agent 配置和已授权工作区，不读取受保护应用数据。"
+  }
+
+  private var headerTitle: String {
+    viewModel.snapshot.lastScannedAt == nil ? "等待构建本机Agent画像" : "本机Agent画像已加载"
   }
 
   private var summaryGrid: some View {
@@ -139,7 +144,8 @@ struct AgentScanView: View {
         if isDiscoveryEmpty && !viewModel.isScanning {
           emptyOverview
         } else {
-          agentsSection
+          commonAgentsSection
+          customAgentsSection
           mcpSkillGrid
           contextSection
         }
@@ -170,7 +176,30 @@ struct AgentScanView: View {
   }
 
   private var selectedAgent: AgentAsset? {
-    sortedAgents.first { $0.id == selectedAgentID } ?? sortedAgents.first
+    sortedAgents.first { $0.id == selectedAgentID }
+      ?? displayedCommonAgents.first
+      ?? customAgents.first
+      ?? sortedAgents.first
+  }
+
+  private var commonAgents: [AgentAsset] {
+    sortedAgents.filter(isCommonAgent)
+  }
+
+  private var customAgents: [AgentAsset] {
+    sortedAgents.filter { !isCommonAgent($0) }
+  }
+
+  private var highConfidenceCommonAgents: [AgentAsset] {
+    commonAgents.filter { $0.confidence >= 90 }
+  }
+
+  private var lowConfidenceCommonAgents: [AgentAsset] {
+    commonAgents.filter { $0.confidence < 90 }
+  }
+
+  private var displayedCommonAgents: [AgentAsset] {
+    showsLowConfidenceCommonAgents ? commonAgents : highConfidenceCommonAgents
   }
 
   private var emptyOverview: some View {
@@ -185,15 +214,55 @@ struct AgentScanView: View {
     }
   }
 
-  private var agentsSection: some View {
-    FrostCard("Agent Assets", subtitle: "真实发现结果") {
-      if viewModel.snapshot.agents.isEmpty {
+  private var commonAgentsSection: some View {
+    FrostCard("常见 Agent", subtitle: "Codex / Gemini / Cursor / Trae 等已知 Agent") {
+      HStack {
+        Text("默认仅展示置信度 >= 90 的常见 Agent")
+          .font(.system(size: 11, weight: .medium))
+          .foregroundStyle(FrostTheme.mutedText)
+
+        Spacer()
+
+        if !lowConfidenceCommonAgents.isEmpty {
+          Button(showsLowConfidenceCommonAgents ? "隐藏低置信度" : "显示低置信度") {
+            showsLowConfidenceCommonAgents.toggle()
+          }
+          .font(.system(size: 11, weight: .semibold))
+        }
+      }
+      .padding(.bottom, 8)
+
+      if commonAgents.isEmpty {
         EmptyStateView(
-          title: "暂无 Agent", message: "扫描完成后未发现 Agent 资产。", systemImage: "tray", compact: true)
+          title: "暂无常见 Agent", message: "当前本机画像中没有发现常见 Agent。", systemImage: "tray",
+          compact: true)
+      } else if displayedCommonAgents.isEmpty {
+        EmptyStateView(
+          title: "暂无高置信度常见 Agent",
+          message: "已发现低置信度常见 Agent，可点击右上角显示。",
+          systemImage: "line.3.horizontal.decrease.circle", compact: true)
       } else {
         VStack(spacing: 0) {
           tableHeader(["名称", "类型", "状态", "MCP", "Skill", "置信度", "风险"])
-          ForEach(sortedAgents) { agent in
+          ForEach(displayedCommonAgents) { agent in
+            agentRow(agent)
+          }
+        }
+      }
+    }
+  }
+
+  private var customAgentsSection: some View {
+    FrostCard("本机自研 Agent", subtitle: "未知 / 自定义终端 Agent 候选") {
+      if customAgents.isEmpty {
+        EmptyStateView(
+          title: "暂无自研 Agent 候选",
+          message: "没有发现通过行为指纹或上下文文件识别出的本机自研 Agent。",
+          systemImage: "terminal", compact: true)
+      } else {
+        VStack(spacing: 0) {
+          tableHeader(["名称", "类型", "状态", "MCP", "Skill", "置信度", "风险"])
+          ForEach(customAgents) { agent in
             agentRow(agent)
           }
         }
@@ -204,6 +273,7 @@ struct AgentScanView: View {
   private func agentRow(_ agent: AgentAsset) -> some View {
     Button {
       selectedAgentID = agent.id
+      viewModel.openRootDirectory(for: agent)
     } label: {
       VStack(spacing: 0) {
         HStack(spacing: 0) {
@@ -229,6 +299,7 @@ struct AgentScanView: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
+    .help("打开 Agent 根目录")
   }
 
   private var mcpSkillGrid: some View {
@@ -519,6 +590,24 @@ struct AgentScanView: View {
     viewModel.snapshot.skills.filter {
       $0.sourceAgentId == agent.id || agent.skillPaths.contains($0.path)
     }.count
+  }
+
+  private func isCommonAgent(_ agent: AgentAsset) -> Bool {
+    let commonNames: Set<String> = [
+      "claude-code",
+      "claude-desktop",
+      "codex-cli",
+      "cursor",
+      "gemini-cli",
+      "cline-roocode",
+      "continue",
+      "openclaw",
+      "aider",
+      "trae",
+      "unknown-vscode-agent-extension",
+    ]
+    return commonNames.contains(agent.normalizedName)
+      || [.known, .cli, .desktop, .ideExtension].contains(agent.agentType)
   }
 
   private func tone(for risk: RiskLevel) -> StatusBadgeTone {

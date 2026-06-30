@@ -11,7 +11,6 @@ final class AgentDiscoveryService: ObservableObject {
   private let store: AssetGraphStore
   private let scanner: ColdStartScanner
   private let runtimeObserver: RuntimeAgentObserver
-  private let scanQueue = DispatchQueue(label: "frostadr.discovery.cold-start", qos: .userInitiated)
 
   init(
     configuration: DiscoveryConfiguration = .default(),
@@ -56,7 +55,7 @@ final class AgentDiscoveryService: ObservableObject {
   }
 
   func start() async {
-    if scanner.isColdStartEnabled {
+    if scanner.isColdStartEnabled && snapshot.lastScannedAt == nil {
       await runColdStartScan()
     }
     let states = runtimeObserver.start { [weak self] snapshot in
@@ -105,11 +104,41 @@ final class AgentDiscoveryService: ObservableObject {
 
   private func runScannerInBackground() async -> DiscoveryScanResult {
     let scanner = self.scanner
-    let scanQueue = self.scanQueue
+    let timeout = configuration.limits.maxScanSeconds + 2
     return await withCheckedContinuation { continuation in
-      scanQueue.async {
-        continuation.resume(returning: scanner.runFullScan())
+      let box = ScanContinuationBox(continuation)
+      DispatchQueue.global(qos: .userInitiated).async {
+        box.resume(with: scanner.runFullScan())
+      }
+      DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + timeout) {
+        var result = DiscoveryScanResult()
+        result.events.append(
+          DiscoveryEvent(
+            id: UUID(),
+            kind: .coldStartScan,
+            path: nil,
+            message: "Cold start discovery scan exceeded the UI time budget and was stopped.",
+            createdAt: Date()
+          ))
+        box.resume(with: result)
       }
     }
+  }
+}
+
+private final class ScanContinuationBox: @unchecked Sendable {
+  private let lock = NSLock()
+  private var continuation: CheckedContinuation<DiscoveryScanResult, Never>?
+
+  init(_ continuation: CheckedContinuation<DiscoveryScanResult, Never>) {
+    self.continuation = continuation
+  }
+
+  func resume(with result: DiscoveryScanResult) {
+    lock.lock()
+    let continuation = self.continuation
+    self.continuation = nil
+    lock.unlock()
+    continuation?.resume(returning: result)
   }
 }
