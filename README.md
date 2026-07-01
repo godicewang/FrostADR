@@ -1,44 +1,48 @@
-# FrostADR - macOS Agent-EDR for AI Agent Security
+# Frost Mac Intelligence (FrostMI)
 
 ![macOS Apple Silicon](https://img.shields.io/badge/platform-macOS%20Apple%20Silicon-0A7EA4?style=flat-square)
 ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-F05138?style=flat-square)
 ![Endpoint Native](https://img.shields.io/badge/architecture-endpoint--native-1F6FEB?style=flat-square)
-![Local First](https://img.shields.io/badge/security-local--first-159947?style=flat-square)
-![Agent EDR](https://img.shields.io/badge/category-Agent--EDR-6F42C1?style=flat-square)
+![Local First](https://img.shields.io/badge/intelligence-local--first-159947?style=flat-square)
+![Prompt Copilot](https://img.shields.io/badge/core-Prompt%20Copilot-6F42C1?style=flat-square)
 
-**FrostADR** is an endpoint-native **Agent Detection & Response / Agent-EDR** project for **macOS Apple Silicon**. It focuses on local AI agent security: discovering AI agents, MCP servers, skills, context files, memory files, runtime candidates, and risk signals directly on the endpoint.
+**Frost Mac Intelligence** (**FrostMI**, 中文名：**Frost Mac端智能**) is a macOS Apple Silicon endpoint-native intelligence platform for local AI agents, user workflows, evidence-bound memory, Prompt Copilot, and cross-agent assistance.
 
-FrostADR 是一款面向 macOS Apple Silicon 的端上 Agent Detection & Response（Agent-EDR）产品。它聚焦本机 AI Agent 的发现、画像、审计与风险线索收集，优先在本地完成轻量扫描与数据导出，为后续 MCP、Skill、上下文、Memory、策略与运行时防护能力预留扩展空间。
+FrostMI 不再只是一个安全控制台。它站在 Mac 端上系统层，感知 Claude Code、Cursor、Codex CLI、Gemini CLI、Cline、Continue、OpenClaw、Aider、MCP、Skills 和企业自研 Agent 的真实行为，把可观察行为沉淀为可审计本地记忆，并用这些记忆帮助用户写出更好的 Prompt、理解跨 Agent 工作流、做出更可靠的决策。
 
-当前版本以 **Agent Scan** 为核心，提供本机 Agent 画像构建、常见 Agent 与自研 Agent 分组、MCP / Skill / Context / Memory 发现、指标卡快速跳转、长列表分页、Finder 路径定位，以及 JSONL 本地导出等基础能力。
-
-如果你关注 **AI Agent security**, **LLM security**, **MCP security**, **prompt injection detection**, **macOS EDR**, **endpoint security**, **agent inventory**, or **local-first security tooling**，欢迎 Star 关注这个项目的持续演进。
+`FrostADR` 仍然保留为 FrostMI 内部的 **Agent Runtime & ADR foundation**，用于承载发现、检测、审计、策略、审批和响应能力。用户侧产品、UI、README 和主应用命名统一使用 **FrostMI**。
 
 ## Screenshot
 
-![FrostADR macOS Agent-EDR dashboard showing Agent Scan, MCP, Skills, Context, Memory and endpoint discovery results](docs/images/frostadr-agent-scan.png)
+![FrostMI macOS endpoint intelligence dashboard with Overview, Prompt Copilot, Agent Sensing, Memory Profile, Assistant, Model Router and local discovery modules](docs/images/frostmi-agent-intelligence.png)
 
-## Why FrostADR
+## Core Positioning
 
-AI coding agents and local assistants are becoming real endpoint actors. They can read workspaces, call tools, invoke MCP servers, write memory, execute commands, and touch sensitive files. Traditional EDR products usually observe processes and files, but they rarely understand agent-specific assets such as MCP configs, `SKILL.md`, `AGENTS.md`, `.cursor/rules`, session JSONL, tool schemas, and agent memory.
+- **Sensing is the foundation:** observe local AI agents, MCP configs, skills, context, memory, processes, files, and runtime candidates.
+- **Memory is the center:** compile evidence-bound local memory, user profiles, project profiles, agent usage profiles, and workflow profiles.
+- **Prompt Copilot is the entry point:** suggest prompt completions, rewrites, Frost Context Blocks, and risk hints without silently rewriting user intent.
+- **Local assistant is the interaction layer:** answer cross-agent questions using local evidence, memory, profiles, session graphs, and audit trails.
+- **Security remains the foundation:** FrostADR Runtime prevents prompt enhancement from bypassing policy, approval, privacy, or trust boundaries.
 
-FrostADR explores an endpoint-native security layer for this new surface:
+## Current Capabilities
 
-- Discover local AI agents without requiring manual path configuration.
-- Inventory MCP servers, skills, context files, memory files, and runtime candidates.
-- Keep scanning local-first, no-exec, and minimum-permission by default.
-- Export normalized local evidence as JSONL for audit and debugging.
-- Prepare for future detection, policy, approval, blocking, and session graph workflows.
-
-## Current Features
-
-- macOS SwiftUI native endpoint security interface.
-- Agent Discovery for known and custom local agents.
-- Common Agent and custom Agent grouping.
+- macOS SwiftUI app renamed and packaged as `FrostMI.app`.
+- Multi-module endpoint intelligence shell:
+  - Overview
+  - Prompt Copilot
+  - Agent Sensing
+  - Memory & Profile
+  - Cross-Agent Assistant
+  - Session Graph
+  - Model Router
+  - Policy & Approval
+  - Privacy Center
+  - Settings
+- Real local Agent Discovery in Agent Sensing.
+- Known Agent and custom Agent grouping.
 - MCP server config discovery without executing MCP server commands.
 - Skill discovery and lightweight pre-scan signals.
 - Context and Memory metadata discovery.
-- Clickable metrics for quick navigation between modules.
 - Fixed 10-row pagination across inventory and runtime status modules.
 - Finder path reveal for Agent, MCP, Skill, Context, and Memory assets.
 - Local JSONL export with Finder reveal.
@@ -46,31 +50,31 @@ FrostADR explores an endpoint-native security layer for this new surface:
 
 ## Search Keywords
 
-These are the main concepts FrostADR is designed around:
-
-`AI agent security`, `Agent Detection and Response`, `Agent EDR`, `endpoint-native security`, `macOS EDR`, `macOS security`, `Apple Silicon security`, `LLM security`, `MCP security`, `Model Context Protocol security`, `MCP scanner`, `Skill scanner`, `prompt injection detection`, `tool poisoning detection`, `agent discovery`, `agent inventory`, `local-first security`, `SwiftUI security app`, `JSONL audit export`, `zero trust for AI agents`.
+`Frost Mac Intelligence`, `FrostMI`, `Mac endpoint intelligence`, `AI agent intelligence`, `AI agent security`, `Prompt Copilot`, `cross-agent memory`, `local AI memory`, `evidence-bound memory`, `agent discovery`, `agent inventory`, `MCP security`, `Model Context Protocol`, `Skill scanner`, `prompt enhancement`, `prompt injection detection`, `LLM security`, `local-first AI`, `macOS AI assistant`, `SwiftUI macOS app`, `FrostADR Runtime`, `Agent Detection and Response`.
 
 ## Recommended GitHub Topics
 
 For repository discovery, add these topics in GitHub's **About** sidebar:
 
-`ai-agent-security`, `agent-edr`, `endpoint-security`, `macos-security`, `swiftui`, `apple-silicon`, `llm-security`, `mcp-security`, `model-context-protocol`, `mcp-scanner`, `prompt-injection`, `agent-discovery`, `ai-security`, `cybersecurity`, `edr`, `local-first`, `agent-inventory`, `skill-scanner`, `jsonl`, `zero-trust`.
+`frostmi`, `mac-intelligence`, `ai-agent-intelligence`, `prompt-copilot`, `local-ai-memory`, `cross-agent-assistant`, `endpoint-intelligence`, `ai-agent-security`, `agent-discovery`, `mcp-security`, `model-context-protocol`, `llm-security`, `macos-security`, `swiftui`, `apple-silicon`, `local-first`, `agent-inventory`, `skill-scanner`, `jsonl`, `frostadr-runtime`.
 
 Suggested repository description:
 
-> Endpoint-native Agent-EDR for macOS Apple Silicon: discover local AI agents, MCP servers, skills, context and memory with local-first security.
+> Frost Mac Intelligence: local-first macOS endpoint intelligence for AI agents, evidence-bound memory, Prompt Copilot, and FrostADR Runtime.
 
 See [GitHub SEO Checklist](docs/github-seo.md) for About sidebar, social preview, release title, and keyword maintenance notes.
 
 ## Architecture Direction
 
-FrostADR is designed as an endpoint-first product:
+FrostMI is designed as an endpoint-first product:
 
-- **UI:** macOS SwiftUI app.
-- **Discovery:** known path fingerprints, config schema parsing, workspace scanning, process fingerprints, and runtime file observation.
-- **Storage:** local SQLite-backed asset graph.
-- **Export:** JSONL for audit portability.
-- **Future endpoint modules:** policy engine, MCP wrapper, local LLM proxy, static scanner, approval workflow, session graph, and system telemetry.
+- **UI:** macOS SwiftUI app plus future NSPanel Prompt Copilot.
+- **Sensing:** known path fingerprints, config schema parsing, workspace scanning, process fingerprints, FSEvents, and runtime observation.
+- **FrostADR Runtime:** local discovery, policy, detection, approval, audit, and response foundation.
+- **Knowledge Store:** SQLite, FTS5, and future embedded vector retrieval for local memory and profile compilation.
+- **Prompt Intelligence:** suggestion-first prompt enhancement with auditable Frost Context Blocks.
+- **Model Router:** replaceable provider interface for local models, OpenAI-compatible providers, DeepSeek, and future Apple Foundation Models.
+- **Export:** JSONL for debug, audit, and portability.
 
 ## Discovery Validation
 
@@ -80,22 +84,22 @@ Run the discovery self-test and bundled app resource check:
 Scripts/run_discovery_tests.sh
 ```
 
-The script runs Agent Discovery self-tests, builds `dist/FrostADR.app`, verifies bundled fingerprint resources, and runs self-tests through the packaged app. Current checks cover MCP config detection and false-positive control, known agent fingerprints, workspace scanning, Skill script signals, discovery source markers, cold-start snapshot replacement, JSONL export integrity, path resolver behavior, and minimum-permission boundaries.
+The script runs Agent Discovery self-tests, builds `dist/FrostMI.app`, verifies bundled fingerprint resources, and runs self-tests through the packaged app. Current checks cover MCP config detection and false-positive control, known agent fingerprints, workspace scanning, Skill script signals, discovery source markers, cold-start snapshot replacement, JSONL export integrity, path resolver behavior, and minimum-permission boundaries.
 
 ## Launch The macOS App
 
-For the easiest local preview, double-click `FrostADR.command` in Finder. It builds a debug app bundle at `dist/FrostADR.app` and opens it.
+For the easiest local preview, double-click `FrostMI.command` in Finder. It builds a debug app bundle at `dist/FrostMI.app` and opens it.
 
 From Terminal, run:
 
 ```bash
-./FrostADR.command
+./FrostMI.command
 ```
 
-To build a release app bundle for local use, double-click `PackageFrostADR.command` or run:
+To build a release app bundle for local use, double-click `PackageFrostMI.command` or run:
 
 ```bash
-./PackageFrostADR.command
+./PackageFrostMI.command
 ```
 
 The reusable build script is:
@@ -109,14 +113,16 @@ Generated build output lives under `dist/` and is intentionally not committed.
 
 ## Roadmap
 
-- Broader Agent Discovery fingerprints for Claude Code, Cursor, Codex CLI, Gemini CLI, Continue, Cline / RooCode, OpenClaw, Aider, Trae, and custom agents.
-- Richer static scanning for MCP configs, skills, context files, and memory files.
-- Session graph reconstruction from observable agent, tool, process, file, and network events.
-- Local policy evaluation, approval prompts, rewrite / block workflows, and audit timeline.
-- Privacy-preserving local redaction before persistence or upload.
+- Prompt Copilot floating panel with global shortcut, focused-app detection, selected text extraction, copy / insert / accept / reject, and feedback logging.
+- Evidence-bound Memory System with typed memories, origin trust, allowed use, disallowed use, and poisoning risk.
+- Profile Compiler for user, project, agent, workflow, and security profiles.
+- Cross-Agent Assistant grounded in local SQL, FTS, vector retrieval, and session graph traversal.
+- Model Router with local and external providers behind a privacy-preserving interface.
+- Session Graph reconstruction from observable prompts, tools, commands, files, network, and memory writes.
+- FrostADR Runtime policy, approval, rewrite, block, audit, and response workflows.
 
 ## Status
 
-FrostADR is an early-stage macOS endpoint security project. The current app focuses on Agent Scan and local discovery scaffolding. Runtime enforcement, full Endpoint Security integration, Network Extension enforcement, MCP wrapping, and LLM proxy features are planned but not yet production-ready.
+FrostMI is an early-stage macOS endpoint intelligence project. The current app focuses on the multi-module product shell and real Agent Sensing / Discovery foundation. Prompt Copilot, Memory/Profile, Assistant, Model Router, full Endpoint Security integration, Network Extension enforcement, MCP wrapping, and Local LLM Proxy features are planned but not yet production-ready.
 
-If this direction is useful to you, please Star the repository so more AI security and endpoint security builders can find it.
+If this direction is useful to you, please Star the repository so more Mac AI, agent intelligence, and endpoint security builders can find it.

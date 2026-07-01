@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RootView: View {
-  @State private var selectedRoute: FrostRoute = .agentScan
+  @State private var selectedRoute: FrostRoute = .overview
 
   var body: some View {
     HStack(spacing: 0) {

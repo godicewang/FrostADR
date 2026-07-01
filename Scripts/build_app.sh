@@ -10,14 +10,14 @@ usage() {
   cat <<'USAGE'
 Usage: Scripts/build_app.sh [--debug|--release] [--open] [--clean]
 
-Builds the SwiftPM FrostADR executable and wraps it as a macOS app bundle:
-  dist/FrostADR.app
+Builds the SwiftPM FrostMI executable and wraps it as a macOS app bundle:
+  dist/FrostMI.app
 
 Options:
   --debug     Build a debug app bundle. This is the default.
   --release   Build a release app bundle for local distribution.
   --open      Open the generated app after packaging.
-  --clean     Remove the previous dist/FrostADR.app before building.
+  --clean     Remove the previous dist/FrostMI.app before building.
   --help      Show this help text.
 USAGE
 }
@@ -49,7 +49,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-APP_NAME="FrostADR"
+APP_NAME="FrostMI"
 APP_DIR="$ROOT_DIR/dist/$APP_NAME.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
@@ -73,11 +73,11 @@ fi
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
-cp "$ROOT_DIR/Packaging/FrostADR-Info.plist" "$CONTENTS_DIR/Info.plist"
+cp "$ROOT_DIR/Packaging/FrostMI-Info.plist" "$CONTENTS_DIR/Info.plist"
 cp "$EXECUTABLE" "$MACOS_DIR/$APP_NAME"
 chmod +x "$MACOS_DIR/$APP_NAME"
-RESOURCE_BUNDLE="$BIN_DIR/${APP_NAME}_${APP_NAME}.bundle"
-if [[ -d "$RESOURCE_BUNDLE" ]]; then
+RESOURCE_BUNDLE="$(find "$BIN_DIR" -maxdepth 1 -type d -name "*_${APP_NAME}.bundle" | head -n 1)"
+if [[ -n "$RESOURCE_BUNDLE" && -d "$RESOURCE_BUNDLE" ]]; then
   cp -R "$RESOURCE_BUNDLE" "$APP_DIR/"
 fi
 printf 'APPL????' > "$CONTENTS_DIR/PkgInfo"

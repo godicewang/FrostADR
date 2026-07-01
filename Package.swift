@@ -3,17 +3,17 @@
 import PackageDescription
 
 let package = Package(
-  name: "FrostADR",
+  name: "FrostMacIntelligence",
   platforms: [
     .macOS(.v14)
   ],
   products: [
-    .executable(name: "FrostADR", targets: ["FrostADR"])
+    .executable(name: "FrostMI", targets: ["FrostMI"])
   ],
   targets: [
     .executableTarget(
-      name: "FrostADR",
-      path: "Sources/FrostADR",
+      name: "FrostMI",
+      path: "Sources/FrostMI",
       resources: [
         .process("Discovery/Fingerprints")
       ]

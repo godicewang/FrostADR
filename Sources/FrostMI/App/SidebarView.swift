@@ -8,7 +8,7 @@ struct SidebarView: View {
       brandHeader
 
       VStack(alignment: .leading, spacing: 10) {
-        Text("MODULE")
+        Text("INTELLIGENCE")
           .font(.system(size: 10, weight: .bold))
           .foregroundStyle(FrostTheme.sidebarMutedText)
           .tracking(1.1)
@@ -46,18 +46,18 @@ struct SidebarView: View {
                 .stroke(FrostTheme.accent.opacity(0.45), lineWidth: 1)
             )
 
-          Image(systemName: "shield.lefthalf.filled")
+          Image(systemName: "snowflake")
             .font(.system(size: 17, weight: .bold))
             .foregroundStyle(FrostTheme.accent)
         }
         .frame(width: 36, height: 36)
 
         VStack(alignment: .leading, spacing: 2) {
-          Text("FrostADR")
+          Text("FrostMI")
             .font(.system(size: 18, weight: .bold))
             .foregroundStyle(.white)
 
-          Text("Endpoint Agent-EDR")
+          Text("Frost Mac Intelligence")
             .font(.system(size: 11, weight: .medium))
             .foregroundStyle(FrostTheme.sidebarMutedText)
         }
@@ -88,7 +88,7 @@ struct SidebarView: View {
   private var endpointStatus: some View {
     VStack(alignment: .leading, spacing: 12) {
       HStack {
-        Label("Endpoint", systemImage: "desktopcomputer")
+        Label("Local Intelligence", systemImage: "brain.head.profile")
           .font(.system(size: 12, weight: .semibold))
           .foregroundStyle(FrostTheme.sidebarMutedText)
 
@@ -97,7 +97,7 @@ struct SidebarView: View {
         StatusBadge(label: "待接入", tone: .neutral)
       }
 
-      Text("等待端上数据接入")
+      Text("本机感知、Memory、Prompt Copilot 待接入")
         .font(.system(size: 12))
         .foregroundStyle(FrostTheme.sidebarMutedText)
     }
@@ -169,7 +169,7 @@ private struct SidebarItem: View {
 
 struct SidebarView_Previews: PreviewProvider {
   static var previews: some View {
-    SidebarView(selection: .constant(.agentScan))
+    SidebarView(selection: .constant(.overview))
       .frame(width: 256, height: 760)
   }
 }

@@ -1,90 +1,106 @@
 # GitHub SEO Checklist
 
-This document keeps FrostADR's GitHub discovery metadata consistent. It is intentionally practical: use it when updating the repository About box, release notes, social preview, and project description.
+This document keeps Frost Mac Intelligence / FrostMI discovery metadata consistent. Use it when updating the repository About box, release notes, social preview, and project description.
+
+## Repository Name
+
+Recommended GitHub repository name:
+
+```text
+FrostMI
+```
+
+Alternative full-name style:
+
+```text
+Frost-Mac-Intelligence
+```
 
 ## Repository Description
 
-Use this concise English description in the GitHub About sidebar:
+Use this concise description in the GitHub About sidebar:
 
-> Endpoint-native Agent-EDR for macOS Apple Silicon: discover local AI agents, MCP servers, skills, context and memory with local-first security.
+> Frost Mac Intelligence: local-first macOS endpoint intelligence for AI agents, evidence-bound memory, Prompt Copilot, and FrostADR Runtime.
 
 ## Repository Topics
 
 GitHub currently allows a limited number of repository topics. Prefer these:
 
+- `frostmi`
+- `mac-intelligence`
+- `ai-agent-intelligence`
+- `prompt-copilot`
+- `local-ai-memory`
+- `cross-agent-assistant`
+- `endpoint-intelligence`
 - `ai-agent-security`
-- `agent-edr`
-- `endpoint-security`
+- `agent-discovery`
+- `mcp-security`
+- `model-context-protocol`
+- `llm-security`
 - `macos-security`
 - `swiftui`
 - `apple-silicon`
-- `llm-security`
-- `mcp-security`
-- `model-context-protocol`
-- `mcp-scanner`
-- `prompt-injection`
-- `agent-discovery`
-- `ai-security`
-- `cybersecurity`
-- `edr`
 - `local-first`
 - `agent-inventory`
 - `skill-scanner`
 - `jsonl`
-- `zero-trust`
+- `frostadr-runtime`
 
 ## Social Preview
 
-Use `docs/images/frostadr-agent-scan.png` as the GitHub social preview image until a dedicated banner is designed.
+Use `docs/images/frostmi-agent-intelligence.png` as the GitHub social preview image until a dedicated banner is designed.
 
 Recommended preview text:
 
 ```text
-FrostADR - macOS Agent-EDR for AI Agent Security
-Endpoint-native discovery for local AI agents, MCP, Skills, Context and Memory.
+Frost Mac Intelligence (FrostMI)
+Local-first Mac endpoint intelligence for AI agents, Prompt Copilot, Memory and FrostADR Runtime.
 ```
 
 ## README Search Terms
 
 Keep these terms naturally present in the README when the related functionality exists:
 
-- AI agent security
-- Agent Detection and Response
-- Agent EDR
-- endpoint-native security
-- macOS EDR
-- macOS security
-- Apple Silicon security
-- LLM security
-- MCP security
-- Model Context Protocol security
-- MCP scanner
-- Skill scanner
-- prompt injection detection
-- tool poisoning detection
+- Frost Mac Intelligence
+- FrostMI
+- Mac endpoint intelligence
+- AI agent intelligence
+- Prompt Copilot
+- cross-agent memory
+- local AI memory
+- evidence-bound memory
 - agent discovery
-- agent inventory
-- local-first security
-- SwiftUI security app
-- JSONL audit export
-- zero trust for AI agents
+- MCP security
+- Model Context Protocol
+- Skill scanner
+- prompt enhancement
+- prompt injection detection
+- LLM security
+- local-first AI
+- macOS AI assistant
+- SwiftUI macOS app
+- FrostADR Runtime
+- Agent Detection and Response
 
-Avoid hidden keyword stuffing. The README should stay readable and accurate so visitors can quickly understand the project and decide whether to Star it.
+Avoid hidden keyword stuffing. The README should stay readable and accurate so visitors can quickly understand the product direction and decide whether to Star it.
 
 ## Release Title Pattern
 
-Use release titles that include both the product name and the discoverable feature:
+Use release titles that include both the product name and discoverable feature:
 
 ```text
-FrostADR v0.x - macOS Agent-EDR Agent Discovery
-FrostADR v0.x - MCP and Skill Security Scanner Preview
-FrostADR v0.x - Local Session Graph and Audit Timeline
+FrostMI v0.x - Mac Endpoint Intelligence Shell
+FrostMI v0.x - Prompt Copilot Preview
+FrostMI v0.x - Evidence-Bound Memory and Profile Compiler
+FrostMI v0.x - FrostADR Runtime Agent Discovery
 ```
 
 ## Star Conversion Notes
 
 - Keep the first screenshot current and visible near the top of README.
-- State the project status honestly; do not imply production enforcement before it exists.
+- Make the distinction clear: FrostMI is the product; FrostADR Runtime is the internal security/runtime foundation.
+- State the project status honestly; do not imply production prompt augmentation or enforcement before it exists.
 - Make local launch commands copy-pasteable.
 - Put the most searchable terms in headings, image alt text, and the first 200 words.
 - Add concrete screenshots after meaningful UI changes.

@@ -40,8 +40,8 @@ final class FrostDatabase {
       FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
       ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(
         "Library/Application Support")
-    return base.appendingPathComponent("FrostADR", isDirectory: true).appendingPathComponent(
-      "FrostADR.sqlite")
+    return base.appendingPathComponent("FrostMI", isDirectory: true).appendingPathComponent(
+      "FrostMI.sqlite")
   }
 
   func upsert<T: Encodable>(_ value: T, kind: RecordKind, key: String, updatedAt: Date = Date())
@@ -128,15 +128,15 @@ enum StorageError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .openFailed(let message):
-      "Failed to open FrostADR database: \(message)"
+      "Failed to open FrostMI database: \(message)"
     case .prepareFailed(let message):
-      "Failed to prepare FrostADR database statement: \(message)"
+      "Failed to prepare FrostMI database statement: \(message)"
     case .executeFailed(let message):
-      "Failed to execute FrostADR database statement: \(message)"
+      "Failed to execute FrostMI database statement: \(message)"
     case .writeFailed(let message):
-      "Failed to write FrostADR database record: \(message)"
+      "Failed to write FrostMI database record: \(message)"
     case .encodeFailed:
-      "Failed to encode FrostADR database payload"
+      "Failed to encode FrostMI database payload"
     }
   }
 }

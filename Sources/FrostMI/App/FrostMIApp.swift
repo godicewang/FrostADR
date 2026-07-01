@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct FrostADRApp: App {
+struct FrostMIApp: App {
   init() {
     if CommandLine.arguments.contains("--discovery-self-test") {
       Foundation.exit(DiscoverySelfTest.run())

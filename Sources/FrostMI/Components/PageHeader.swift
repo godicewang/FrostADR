@@ -28,11 +28,11 @@ struct PageHeader: View {
       Spacer()
 
       VStack(alignment: .trailing, spacing: 4) {
-        Text("FrostADR")
+        Text("FrostMI")
           .font(.system(size: 12, weight: .semibold))
           .foregroundStyle(FrostTheme.mutedText)
 
-        Text("端上轻量发现")
+        Text("Mac端智能")
           .font(.system(size: 12, weight: .medium))
           .foregroundStyle(FrostTheme.accent)
       }
@@ -44,7 +44,9 @@ struct PageHeader: View {
 
 struct PageHeader_Previews: PreviewProvider {
   static var previews: some View {
-    PageHeader(title: "Dashboard", subtitle: "端上 Agent 风险态势与保护模块状态。", path: "FrostADR / Dashboard")
-      .padding()
+    PageHeader(
+      title: "Overview", subtitle: "Mac endpoint intelligence posture.", path: "FrostMI / Overview"
+    )
+    .padding()
   }
 }

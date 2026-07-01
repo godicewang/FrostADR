@@ -28,9 +28,9 @@ struct AgentScanView: View {
     ScrollViewReader { scrollProxy in
       FrostPage {
         PageHeader(
-          title: "Agent Scan",
-          subtitle: "本机 AI Agent、MCP、Skill、上下文文件和运行时候选的真实端上发现。",
-          path: "FrostADR / Agent Scan"
+          title: "Agent Sensing",
+          subtitle: "本机 AI Agent、MCP、Skill、上下文、Memory 和运行时候选的端上感知。",
+          path: "FrostMI / Agent Sensing"
         )
 
         header
@@ -44,7 +44,7 @@ struct AgentScanView: View {
   }
 
   private var header: some View {
-    FrostCard("Agent Discovery", subtitle: "Cold start scan + runtime observation") {
+    FrostCard("Agent Discovery", subtitle: "FrostADR Runtime foundation") {
       HStack(alignment: .top, spacing: 16) {
         ZStack {
           RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -72,6 +72,7 @@ struct AgentScanView: View {
 
           HStack(spacing: 7) {
             StatusBadge(label: "Local Endpoint", tone: .info)
+            StatusBadge(label: "Evidence Bound", tone: .info)
             StatusBadge(label: "No-Exec Scan", tone: .healthy)
             StatusBadge(label: "Page Size 10", tone: .neutral)
           }
@@ -316,11 +317,11 @@ struct AgentScanView: View {
   }
 
   private var emptyOverview: some View {
-    FrostCard("真实空状态", subtitle: "No local agent assets discovered") {
+    FrostCard("真实空状态", subtitle: "No local intelligence assets discovered") {
       EmptyStateView(
-        title: "未发现 Agent 资产",
+        title: "未发现本机 Agent 资产",
         message:
-          "当前轻量扫描范围内没有发现 Agent、MCP、Skill 或上下文资产。创建 AGENTS.md、.mcp.json、SKILL.md 或安装本地 Agent 后可重新扫描。",
+          "当前轻量感知范围内没有发现 Agent、MCP、Skill 或上下文资产。创建 AGENTS.md、.mcp.json、SKILL.md 或安装本地 Agent 后可重新构建画像。",
         systemImage: "checkmark.shield"
       )
       .frame(minHeight: 260)
@@ -330,7 +331,7 @@ struct AgentScanView: View {
   private var commonAgentsSection: some View {
     let visibleAgents = pageItems(displayedCommonAgents, page: commonAgentPage)
 
-    return FrostCard("常见 Agent", subtitle: "Codex / Gemini / Cursor / Trae 等已知 Agent") {
+    return FrostCard("Known Agents", subtitle: "Codex / Gemini / Cursor / Trae 等已知 Agent") {
       HStack {
         Text("默认仅展示置信度 >= 90 的常见 Agent")
           .font(.system(size: 11, weight: .medium))
@@ -372,7 +373,7 @@ struct AgentScanView: View {
   private var customAgentsSection: some View {
     let visibleAgents = pageItems(customAgents, page: customAgentPage)
 
-    return FrostCard("本机自研 Agent", subtitle: "未知 / 自定义终端 Agent 候选") {
+    return FrostCard("Custom Agents", subtitle: "未知 / 自定义终端 Agent 候选") {
       if customAgents.isEmpty {
         EmptyStateView(
           title: "暂无自研 Agent 候选",

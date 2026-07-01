@@ -54,7 +54,7 @@ struct FrostDetailLayout<Primary: View, Detail: View>: View {
 struct FrostPage_Previews: PreviewProvider {
   static var previews: some View {
     FrostPage {
-      PageHeader(title: "Preview", subtitle: "Stable page container.", path: "FrostADR / Preview")
+      PageHeader(title: "Preview", subtitle: "Stable page container.", path: "FrostMI / Preview")
       FrostCard("Card") {
         EmptyStateView(title: "Empty", message: "No data.", compact: true)
       }
