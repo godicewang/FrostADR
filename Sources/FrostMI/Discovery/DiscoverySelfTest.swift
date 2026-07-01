@@ -14,6 +14,7 @@ enum DiscoverySelfTest {
       let expected = Set([
         "claude-code",
         "claude-desktop",
+        "codex-app",
         "codex-cli",
         "cursor",
         "trae",
@@ -35,6 +36,8 @@ enum DiscoverySelfTest {
       let protectedNames = ["Documents", "Desktop", "Downloads", "Library"]
       let knownAgentSettings = home.appendingPathComponent(
         "Library/Application Support/Cursor/User/settings.json")
+      let knownCodexSupport = home.appendingPathComponent(
+        "Library/Application Support/Codex/Preferences")
       let unrelatedSettings = home.appendingPathComponent(
         "Library/Application Support/UnrelatedApp/settings.json")
       return config.scanRoots.isEmpty
@@ -49,6 +52,7 @@ enum DiscoverySelfTest {
         && !config.enableNetworkMonitor
         && !config.enableUserApplicationSupportScan
         && config.allowsAutomaticAccess(to: knownAgentSettings)
+        && config.allowsAutomaticAccess(to: knownCodexSupport)
         && !config.allowsAutomaticAccess(to: unrelatedSettings)
     }
 
@@ -298,6 +302,7 @@ enum DiscoverySelfTest {
       let result = try knownScan(home: environment.home, project: environment.project)
       let names = Set(result.agents.map(\.normalizedName))
       return names.contains("claude-code")
+        && names.contains("codex-app")
         && names.contains("codex-cli")
         && names.contains("openclaw")
         && result.mcpServers.contains { $0.name == "claude-home" }
@@ -492,6 +497,38 @@ enum DiscoverySelfTest {
       }
     }
 
+    check("Process inspector attributes Codex app child process to app", failures: &failures) {
+      let root = try temporaryDirectory(named: "CodexAppProcess")
+      let config = DiscoveryConfiguration(
+        homeDirectory: root,
+        projectRoot: root,
+        scanRoots: [],
+        limits: .lightweightDefault,
+        enableColdStartScan: true,
+        enableRuntimeObserver: false,
+        enableFSEventsWatcher: false,
+        enableEndpointSecurityMonitor: false,
+        enableNetworkMonitor: false,
+        enableUserApplicationSupportScan: false
+      )
+      let result = try ProcessInspector(
+        behaviorEngine: BehaviorFingerprintEngine(), config: config, registry: .bundled()
+      ).inspect(
+        observations: [
+          ProcessObservation(
+            pid: 4243,
+            ppid: 1,
+            command: "/Applications/Co",
+            arguments: "/Applications/Codex.app/Contents/Resources/codex app-server")
+        ])
+      return result.agents.contains {
+        $0.normalizedName == "codex-app" && $0.processIds.contains(4243)
+      }
+        && !result.agents.contains {
+          $0.normalizedName == "codex-cli" && $0.processIds.contains(4243)
+        }
+    }
+
     check("Process inspector does not classify generic shell by name only", failures: &failures) {
       let root = try temporaryDirectory(named: "GenericShell")
       let config = DiscoveryConfiguration(
@@ -615,6 +652,40 @@ enum DiscoverySelfTest {
       let reloaded = try AssetGraphStore(database: FrostDatabase(url: dbURL)).loadSnapshot()
       return snapshot.agents.count == 1 && snapshot.agents[0].confidence == 80
         && reloaded.lastScannedAt != nil
+    }
+
+    check("AssetGraphStore keeps separate agent surfaces distinct", failures: &failures) {
+      let dbURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString)
+        .appendingPathComponent("FrostADR.sqlite")
+      let store = try AssetGraphStore(database: FrostDatabase(url: dbURL))
+      var result = DiscoveryScanResult()
+      result.agents = [
+        AgentAsset(
+          displayName: "Codex CLI",
+          normalizedName: "codex-cli",
+          agentType: .cli,
+          confidence: 80,
+          discoveryMethods: [.configSchema],
+          configPaths: ["/Users/fixture/.codex/config.toml"]),
+        AgentAsset(
+          displayName: "Codex App",
+          normalizedName: "codex-app",
+          agentType: .desktop,
+          confidence: 90,
+          discoveryMethods: [.knownPath],
+          configPaths: ["/Users/fixture/.codex/config.toml"]),
+      ]
+      let snapshot = try store.merge(result)
+      let reloaded = try AssetGraphStore(database: FrostDatabase(url: dbURL)).loadSnapshot()
+      let names = Set(snapshot.agents.map(\.normalizedName))
+      let reloadedNames = Set(reloaded.agents.map(\.normalizedName))
+      return snapshot.agents.count == 2
+        && names.contains("codex-cli")
+        && names.contains("codex-app")
+        && reloaded.agents.count == 2
+        && reloadedNames.contains("codex-cli")
+        && reloadedNames.contains("codex-app")
     }
 
     check("AssetGraphStore does not treat runtime-only data as cold scan", failures: &failures) {
@@ -807,6 +878,9 @@ enum DiscoverySelfTest {
     try write(
       "[mcp_servers.codex-home]\ncommand = \"node\"\nargs = [\"codex-server.js\"]\n",
       to: home.appendingPathComponent(".codex/config.toml"))
+    try FileManager.default.createDirectory(
+      at: home.appendingPathComponent("Applications/Codex.app/Contents"),
+      withIntermediateDirectories: true)
     try write(
       "# Home Agent Context\n\nUse model tools and mcpServers carefully.",
       to: home.appendingPathComponent(".codex/AGENTS.md"))

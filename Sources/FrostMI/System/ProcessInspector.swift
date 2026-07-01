@@ -98,13 +98,16 @@ final class ProcessInspector {
     var result = DiscoveryScanResult()
     guard let registry else { return result }
 
-    let processName = URL(fileURLWithPath: row.command).lastPathComponent
-    for fingerprint in registry.fingerprints
-    where fingerprint.confidenceWeights.process >= 20
-      && fingerprint.processNames.contains(where: {
-        $0.caseInsensitiveCompare(processName) == .orderedSame
-      })
-    {
+    let processName = observedProcessName(for: row)
+    let pathScopedMatches = registry.fingerprints.filter {
+      $0.confidenceWeights.process >= 20 && processBelongsToInstallPath(row, fingerprint: $0)
+    }
+    let nameMatches = registry.fingerprints.filter {
+      $0.confidenceWeights.process >= 20 && processNameMatches(processName, fingerprint: $0)
+    }
+    let matchingFingerprints = pathScopedMatches.isEmpty ? nameMatches : pathScopedMatches
+
+    for fingerprint in matchingFingerprints {
       let confidence = fingerprint.confidenceWeights.process
       let agent = AgentAsset(
         displayName: fingerprint.displayName,
@@ -115,7 +118,7 @@ final class ProcessInspector {
         discoveryMethods: [.processFingerprint],
         scopes: [.runtime],
         processIds: [row.pid],
-        executablePaths: [row.command],
+        executablePaths: [observedExecutablePath(for: row)],
         managedStatus: .observableOnly,
         runtimeStatus: .running,
         riskLevel: .informational,
@@ -134,6 +137,49 @@ final class ProcessInspector {
         ))
     }
     return result
+  }
+
+  private func observedProcessName(for row: ProcessObservation) -> String {
+    if let executable = firstArgumentExecutablePath(for: row),
+      executable.hasPrefix(row.command), executable != row.command
+    {
+      return URL(fileURLWithPath: executable).lastPathComponent
+    }
+
+    let commandName = URL(fileURLWithPath: row.command).lastPathComponent
+    return commandName
+  }
+
+  private func observedExecutablePath(for row: ProcessObservation) -> String {
+    firstArgumentExecutablePath(for: row) ?? row.command
+  }
+
+  private func firstArgumentExecutablePath(for row: ProcessObservation) -> String? {
+    guard let firstArgument = row.arguments.split(whereSeparator: { $0 == " " || $0 == "\t" })
+      .first
+    else {
+      return nil
+    }
+    let executable = String(firstArgument)
+    return executable.hasPrefix("/") ? executable : nil
+  }
+
+  private func processNameMatches(_ processName: String, fingerprint: AgentFingerprint) -> Bool {
+    fingerprint.processNames.contains {
+      $0.caseInsensitiveCompare(processName) == .orderedSame
+    }
+  }
+
+  private func processBelongsToInstallPath(
+    _ row: ProcessObservation, fingerprint: AgentFingerprint
+  ) -> Bool {
+    let text = "\(row.command) \(row.arguments)"
+    return fingerprint.installPaths
+      .map { DiscoveryUtilities.expandedPath($0, home: config.homeDirectory).path }
+      .filter { $0.hasSuffix(".app") }
+      .contains { installPath in
+        text == installPath || text.contains("\(installPath)/")
+      }
   }
 
   private func processRows(timeout: TimeInterval) -> [ProcessObservation] {

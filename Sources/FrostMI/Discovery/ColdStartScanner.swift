@@ -92,7 +92,7 @@ final class ColdStartScanner: @unchecked Sendable {
         contentsOf: (agent.configPaths + agent.mcpConfigPaths).map(URL.init(fileURLWithPath:)))
     }
 
-    if normalizedNames.contains("codex-cli") {
+    if normalizedNames.contains("codex-cli") || normalizedNames.contains("codex-app") {
       let codexHome = config.homeDirectory.appendingPathComponent(".codex", isDirectory: true)
       files.append(contentsOf: codexSupportFiles(in: codexHome))
       files.append(contentsOf: codexPluginMCPFiles(in: codexHome))

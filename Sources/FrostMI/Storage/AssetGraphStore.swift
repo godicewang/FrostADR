@@ -207,28 +207,31 @@ private struct JSONLRecord<T: Encodable>: Encodable {
 extension AgentAsset {
   fileprivate var primaryStoreKey: String {
     if let path = configPaths.first {
-      return "config:\(path)"
+      return "agent:\(normalizedName):config:\(path)"
     }
     if let path = installPaths.first {
-      return "install:\(path)"
+      return "agent:\(normalizedName):install:\(path)"
     }
     if let path = executablePaths.first {
-      return "exec:\(path)"
+      return "agent:\(normalizedName):exec:\(path)"
     }
     if let workspace = workspacePaths.first {
-      return "workspace:\(normalizedName):\(workspace)"
+      return "agent:\(normalizedName):workspace:\(workspace)"
     }
-    return "name:\(normalizedName)"
+    return "agent:\(normalizedName)"
   }
 
   fileprivate func mergeKeyMatches(_ other: AgentAsset) -> Bool {
-    intersects(configPaths, other.configPaths)
+    guard normalizedName == other.normalizedName else {
+      return false
+    }
+
+    return intersects(configPaths, other.configPaths)
       || intersects(installPaths, other.installPaths)
       || intersects(executablePaths, other.executablePaths)
       || intersects(bundleIdentifiers, other.bundleIdentifiers)
-      || (normalizedName == other.normalizedName
-        && intersects(workspacePaths, other.workspacePaths))
-      || (normalizedName == other.normalizedName && !normalizedName.isEmpty)
+      || intersects(workspacePaths, other.workspacePaths)
+      || !normalizedName.isEmpty
   }
 }
 

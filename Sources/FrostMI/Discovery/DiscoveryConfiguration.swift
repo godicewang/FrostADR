@@ -54,6 +54,7 @@ struct DiscoveryConfiguration: Codable, Hashable {
 
   private static let knownAgentApplicationSupportDirectories: Set<String> = [
     "Claude",
+    "Codex",
     "Cursor",
     "Code",
     "Code - Insiders",

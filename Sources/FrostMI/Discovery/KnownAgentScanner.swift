@@ -328,11 +328,11 @@ final class KnownAgentScanner {
       guard files.count < config.limits.maxCollectedMemoryFiles else { break }
       let url = URL(fileURLWithPath: path)
       guard shouldAccess(url) else { continue }
-      if DiscoveryUtilities.fileExists(url) {
-        files.append(url)
-      } else if DiscoveryUtilities.directoryExists(url) {
+      if DiscoveryUtilities.directoryExists(url) {
         collectMemoryFiles(
           in: url, depth: 0, files: &files, budget: &budget, deadline: deadline)
+      } else if DiscoveryUtilities.fileExists(url), isMemoryLikeFile(url) {
+        files.append(url)
       }
     }
     return files
@@ -372,6 +372,7 @@ final class KnownAgentScanner {
     let name = url.lastPathComponent.lowercased()
     return name.hasSuffix(".jsonl") || name.hasSuffix(".sqlite") || name.hasSuffix(".db")
       || name.contains("memory") || name.contains("conversation") || name.contains("session")
+      || name.contains("history")
   }
 
   private func isExpired(_ deadline: Date?) -> Bool {

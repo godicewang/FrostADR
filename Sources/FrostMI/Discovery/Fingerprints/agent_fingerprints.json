@@ -75,6 +75,31 @@
     }
   },
   {
+    "displayName": "Codex App",
+    "normalizedName": "codex-app",
+    "vendor": "OpenAI",
+    "agentType": "desktop",
+    "processNames": ["Codex"],
+    "installPaths": ["/Applications/Codex.app", "~/Applications/Codex.app"],
+    "configPaths": [],
+    "projectMarkers": [],
+    "mcpConfigPaths": [],
+    "skillPaths": [],
+    "cachePaths": ["~/Library/Application Support/Codex"],
+    "extensionPaths": [],
+    "memoryPaths": [],
+    "confidenceWeights": {
+      "installPath": 90,
+      "configPath": 0,
+      "process": 35,
+      "projectMarker": 0,
+      "mcpConfig": 0,
+      "skill": 0,
+      "cache": 0,
+      "memory": 0
+    }
+  },
+  {
     "displayName": "Cursor",
     "normalizedName": "cursor",
     "vendor": "Anysphere",

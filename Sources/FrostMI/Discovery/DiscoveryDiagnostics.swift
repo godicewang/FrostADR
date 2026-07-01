@@ -35,6 +35,12 @@ enum DiscoveryDiagnostics {
         print(
           "merged agents=\(snapshot.agents.count) mcp=\(snapshot.mcpServers.count) skills=\(snapshot.skills.count) context=\(snapshot.contextFiles.count) memory=\(snapshot.memories.count) permissions=\(snapshot.permissionStates.count)"
         )
+        print("agents:")
+        for agent in snapshot.agents.sorted(by: { $0.normalizedName < $1.normalizedName }) {
+          print(
+            "- \(agent.displayName) | \(agent.normalizedName) | confidence=\(agent.confidence)"
+          )
+        }
       }
       print("events:")
       for event in result.events {
