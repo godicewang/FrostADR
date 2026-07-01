@@ -44,11 +44,40 @@ struct DiscoveryConfiguration: Codable, Hashable {
 
   func allowsAutomaticAccess(to url: URL) -> Bool {
     if !enableUserApplicationSupportScan,
-      DiscoveryUtilities.isUserApplicationSupportPath(url, home: homeDirectory)
+      DiscoveryUtilities.isUserApplicationSupportPath(url, home: homeDirectory),
+      !Self.isKnownAgentApplicationSupportPath(url, homeDirectory: homeDirectory)
     {
       return false
     }
     return true
+  }
+
+  private static let knownAgentApplicationSupportDirectories: Set<String> = [
+    "Claude",
+    "Cursor",
+    "Code",
+    "Code - Insiders",
+    "Trae",
+  ]
+
+  private static func isKnownAgentApplicationSupportPath(
+    _ url: URL, homeDirectory: URL
+  ) -> Bool {
+    let applicationSupport = homeDirectory.standardizedFileURL
+      .appendingPathComponent("Library", isDirectory: true)
+      .appendingPathComponent("Application Support", isDirectory: true)
+      .standardizedFileURL
+      .path
+    let path = url.standardizedFileURL.path
+    guard path.hasPrefix(applicationSupport + "/") else {
+      return false
+    }
+
+    let relativePath = String(path.dropFirst(applicationSupport.count + 1))
+    guard let directoryName = relativePath.split(separator: "/").first else {
+      return false
+    }
+    return knownAgentApplicationSupportDirectories.contains(String(directoryName))
   }
 
   private static func isSafeAutomaticWorkspaceRoot(_ root: URL, homeDirectory: URL) -> Bool {

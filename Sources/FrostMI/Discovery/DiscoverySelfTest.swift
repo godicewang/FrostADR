@@ -33,6 +33,10 @@ enum DiscoverySelfTest {
       let home = fixture("Home")
       let config = DiscoveryConfiguration.default(homeDirectory: home, projectRoot: home)
       let protectedNames = ["Documents", "Desktop", "Downloads", "Library"]
+      let knownAgentSettings = home.appendingPathComponent(
+        "Library/Application Support/Cursor/User/settings.json")
+      let unrelatedSettings = home.appendingPathComponent(
+        "Library/Application Support/UnrelatedApp/settings.json")
       return config.scanRoots.isEmpty
         && protectedNames.allSatisfy { protectedName in
           !config.scanRoots.contains {
@@ -44,8 +48,8 @@ enum DiscoverySelfTest {
         && !config.enableEndpointSecurityMonitor
         && !config.enableNetworkMonitor
         && !config.enableUserApplicationSupportScan
-        && !config.allowsAutomaticAccess(
-          to: home.appendingPathComponent("Library/Application Support/Cursor/User/settings.json"))
+        && config.allowsAutomaticAccess(to: knownAgentSettings)
+        && !config.allowsAutomaticAccess(to: unrelatedSettings)
     }
 
     check("Default discovery includes safe common code roots", failures: &failures) {
@@ -278,8 +282,26 @@ enum DiscoverySelfTest {
         && result.mcpServers.contains { $0.name == "claude-home" }
         && result.mcpServers.contains { $0.name == "fixture-claude" }
         && result.mcpServers.contains { $0.name == "codex-home" }
+        && result.mcpServers.contains { $0.name == "cursor-home" }
         && result.skills.contains { $0.path.contains(".claude/skills/home-skill") }
+        && result.skills.contains { $0.path.contains(".cursor/skills-cursor/cursor-skill") }
         && result.skills.contains { $0.path.contains(".openclaw/skills/claw-skill") }
+    }
+
+    check("Cold start scanner follows known agent support roots", failures: &failures) {
+      let environment = try preparedKnownAgentEnvironment()
+      let result = try coldScan(home: environment.home, project: environment.project)
+      return result.contextFiles.contains {
+        $0.path == environment.home.appendingPathComponent(".codex/AGENTS.md").path
+      }
+        && result.contextFiles.contains {
+          $0.path == environment.home.appendingPathComponent(".gemini/GEMINI.md").path
+        }
+        && result.mcpServers.contains { $0.name == "cursor-home" }
+        && result.skills.contains { $0.path.contains(".cursor/skills-cursor/cursor-skill") }
+        && result.memories.contains {
+          $0.path == environment.home.appendingPathComponent(".codex/session_index.jsonl").path
+        }
     }
 
     check("Known scanner detects Aider wildcard and relative memory path", failures: &failures) {
@@ -318,26 +340,44 @@ enum DiscoverySelfTest {
       return candidate.discoveryMethods == [.workspaceScan]
     }
 
-    check("Application Support scan is explicit opt-in", failures: &failures) {
+    check("Application Support scan is targeted by default", failures: &failures) {
       let root = try temporaryDirectory(named: "ApplicationSupport")
       let home = root.appendingPathComponent("Home", isDirectory: true)
       let project = root.appendingPathComponent("Project", isDirectory: true)
       let cursorSettings = home.appendingPathComponent(
         "Library/Application Support/Cursor/User/settings.json")
+      let unrelatedSettings = home.appendingPathComponent(
+        "Library/Application Support/UnrelatedApp/settings.json")
       try FileManager.default.createDirectory(
         at: cursorSettings.deletingLastPathComponent(), withIntermediateDirectories: true)
+      try FileManager.default.createDirectory(
+        at: unrelatedSettings.deletingLastPathComponent(), withIntermediateDirectories: true)
       try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
       try write(
         #"{"mcpServers":{"cursor-mcp":{"command":"node","args":["cursor-server.js"]}}}"#,
         to: cursorSettings)
+      try write(
+        #"{"mcpServers":{"unrelated-mcp":{"command":"node","args":["ignored.js"]}}}"#,
+        to: unrelatedSettings)
 
-      let disabled = try knownScan(
+      let config = DiscoveryConfiguration(
+        homeDirectory: home,
+        projectRoot: project,
+        scanRoots: [project],
+        limits: .lightweightDefault,
+        enableColdStartScan: true,
+        enableRuntimeObserver: false,
+        enableFSEventsWatcher: false,
+        enableEndpointSecurityMonitor: false,
+        enableNetworkMonitor: false,
+        enableUserApplicationSupportScan: false
+      )
+      let result = try knownScan(
         home: home, project: project, enableUserApplicationSupportScan: false)
-      let enabled = try knownScan(
-        home: home, project: project, enableUserApplicationSupportScan: true)
-      return !disabled.mcpServers.contains { $0.name == "cursor-mcp" }
-        && enabled.agents.contains { $0.normalizedName == "cursor" }
-        && enabled.mcpServers.contains { $0.name == "cursor-mcp" }
+      return config.allowsAutomaticAccess(to: cursorSettings)
+        && !config.allowsAutomaticAccess(to: unrelatedSettings)
+        && result.agents.contains { $0.normalizedName == "cursor" }
+        && result.mcpServers.contains { $0.name == "cursor-mcp" }
     }
 
     check("Memory scanner extracts metadata only", failures: &failures) {
@@ -746,6 +786,21 @@ enum DiscoverySelfTest {
       "[mcp_servers.codex-home]\ncommand = \"node\"\nargs = [\"codex-server.js\"]\n",
       to: home.appendingPathComponent(".codex/config.toml"))
     try write(
+      "# Home Agent Context\n\nUse model tools and mcpServers carefully.",
+      to: home.appendingPathComponent(".codex/AGENTS.md"))
+    try write(
+      #"{"session":"fixture","messages":[{"role":"user","content":"scan"}],"tools":["shell"]}"#,
+      to: home.appendingPathComponent(".codex/session_index.jsonl"))
+    try write(
+      "# Gemini Context\n\nUse tool call boundaries for workspace automation.",
+      to: home.appendingPathComponent(".gemini/GEMINI.md"))
+    try write(
+      #"{"mcpServers":{"cursor-home":{"command":"node","args":["cursor-server.js"]}}}"#,
+      to: home.appendingPathComponent("Library/Application Support/Cursor/User/settings.json"))
+    try write(
+      "# Cursor Skill\n\nInspect workspace metadata.",
+      to: home.appendingPathComponent(".cursor/skills-cursor/cursor-skill/SKILL.md"))
+    try write(
       "# OpenClaw Skill\n\nUse a local tool.",
       to: home.appendingPathComponent(".openclaw/skills/claw-skill/SKILL.md"))
     try FileManager.default.createDirectory(
@@ -795,6 +850,42 @@ enum DiscoverySelfTest {
       memoryScanner: MemoryFileScanner(limits: config.limits),
       config: config
     ).scan()
+  }
+
+  private static func coldScan(
+    home: URL, project: URL, enableUserApplicationSupportScan: Bool = false
+  ) throws -> DiscoveryScanResult {
+    let config = DiscoveryConfiguration(
+      homeDirectory: home,
+      projectRoot: project,
+      scanRoots: [project],
+      limits: ScanLimits(
+        maxDepth: 5, maxFileBytes: 128 * 1024, maxDirectoryEntries: 256,
+        maxScannedDirectories: 256, maxInspectedFiles: 512, maxCollectedMemoryFiles: 64),
+      enableColdStartScan: true,
+      enableRuntimeObserver: false,
+      enableFSEventsWatcher: false,
+      enableEndpointSecurityMonitor: false,
+      enableNetworkMonitor: false,
+      enableUserApplicationSupportScan: enableUserApplicationSupportScan
+    )
+    return try ColdStartScanner(
+      knownAgentScanner: KnownAgentScanner(
+        registry: .bundled(),
+        skillScanner: SkillScanner(limits: config.limits),
+        memoryScanner: MemoryFileScanner(limits: config.limits),
+        config: config),
+      keywordScanner: KeywordFileScanner(
+        config: config,
+        skillScanner: SkillScanner(limits: config.limits),
+        memoryScanner: MemoryFileScanner(limits: config.limits)),
+      processInspector: ProcessInspector(
+        behaviorEngine: BehaviorFingerprintEngine(), config: config, registry: .bundled()),
+      permissionInspector: FileSystemPermissionInspector(),
+      endpointSecurityMonitor: EndpointSecurityMonitor(),
+      networkFlowMonitor: NetworkFlowMonitor(),
+      config: config
+    ).runFullScan()
   }
 }
 

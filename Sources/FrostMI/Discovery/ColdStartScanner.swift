@@ -44,9 +44,7 @@ final class ColdStartScanner: @unchecked Sendable {
     if !isExpired(deadline) {
       result.merge(
         keywordScanner.scan(
-          additionalRoots: result.agents.flatMap {
-            $0.workspacePaths.map(URL.init(fileURLWithPath:))
-          },
+          additionalRoots: keywordScanRoots(for: result.agents),
           deadline: deadline
         ))
     }
@@ -79,6 +77,33 @@ final class ColdStartScanner: @unchecked Sendable {
 
   private func isExpired(_ deadline: Date) -> Bool {
     Date() >= deadline
+  }
+
+  private func keywordScanRoots(for agents: [AgentAsset]) -> [URL] {
+    agents.flatMap { agent -> [URL] in
+      let fileBackedPaths = agent.configPaths + agent.mcpConfigPaths + agent.executablePaths
+      let fileBackedRoots = fileBackedPaths.map {
+        URL(fileURLWithPath: $0).deletingLastPathComponent()
+      }
+
+      let mixedPaths =
+        agent.workspacePaths + agent.skillPaths + agent.cachePaths + agent.memoryPaths
+      let mixedRoots = mixedPaths.map {
+        discoveryRoot(for: URL(fileURLWithPath: $0))
+      }
+
+      return fileBackedRoots + mixedRoots
+    }
+    .map { $0.standardizedFileURL }
+    .uniqueSorted()
+  }
+
+  private func discoveryRoot(for url: URL) -> URL {
+    var isDirectory: ObjCBool = false
+    if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) {
+      return isDirectory.boolValue ? url : url.deletingLastPathComponent()
+    }
+    return url
   }
 }
 

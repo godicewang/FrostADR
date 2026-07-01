@@ -84,7 +84,7 @@
     "configPaths": ["~/Library/Application Support/Cursor/User/settings.json"],
     "projectMarkers": [".cursor/rules", ".cursor/mcp.json", "AGENTS.md"],
     "mcpConfigPaths": ["~/Library/Application Support/Cursor/User/settings.json"],
-    "skillPaths": [],
+    "skillPaths": ["~/.cursor/skills-cursor", "~/.cursor/skills"],
     "cachePaths": ["~/Library/Application Support/Cursor"],
     "extensionPaths": ["~/.cursor/extensions"],
     "memoryPaths": ["~/Library/Application Support/Cursor"],
@@ -94,7 +94,7 @@
       "process": 30,
       "projectMarker": 25,
       "mcpConfig": 15,
-      "skill": 0,
+      "skill": 20,
       "cache": 10,
       "memory": 10
     }
